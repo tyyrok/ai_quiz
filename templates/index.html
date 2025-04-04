@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f0f4ff, #ffffff);
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(100, 149, 237, 0.5);
+        }
+    </style>
+</head>
+<body class="text-gray-900">
+    <div class="max-w-3xl mx-auto p-6">
+        <!-- Project Description -->
+        <section class="bg-white p-6 rounded-xl shadow-md mb-6 ai-glow">
+            <h1 class="text-2xl font-bold text-blue-600">AI-Powered Quiz</h1>
+            <h2 class="content-center">Do you want to check your Knowledge or want to pursue how AI is correct in IT issues?</h2>
+            <p class="mt-2 text-gray-600">Do you want to check your Knowledge or want to pursue how AI is correct in IT issues?</p>
+            <p class="mt-2 text-gray-600">Everyday we ask AI model to generate questions with answers and choose right answer.</p>
+        </section>
+        
+        <!-- Questions Section -->
+        <section x-data="{
+            questions: JSON.parse('{{.questions}}'),
+            selectAnswer(question, answerIndex) {
+                question.selected = answerIndex;
+            },
+            incrementLikes(question) {
+                question.likes++;
+            }
+        }">
+            <div class="space-y-6">
+                <template x-for="(q, index) in questions" :key="index">
+                    <div class="bg-white p-6 rounded-xl shadow-md ai-glow">
+                        <h2 class="text-lg font-semibold text-indigo-600" x-text="q.text"></h2>
+                        <div class="mt-4 space-y-2">
+                            <template x-for="(answer, aIndex) in q.answers" :key="aIndex">
+                                <button 
+                                    class="block w-full p-2 bg-gray-200 rounded hover:bg-indigo-300 hover:text-white transition-all"
+                                    :class="{'bg-blue-500 text-white': q.selected === aIndex}"
+                                    @click="q.selected = aIndex"
+                                    x-text="answer.text">
+                                </button>
+                            </template>
+                        </div>
+                        <button class="mt-4 text-sm text-gray-500 hover:text-gray-700 flex items-center" @click="q.likes++">
+                            🤖 <span class="ml-2" x-text="q.likes"></span> Likes
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </section>
+        
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>&copy; 2025 AI Knowledge Hub. Powered by Alpine.js & Tailwind CSS.</p>
+        </footer>
+    </div>
+</body>
+</html>

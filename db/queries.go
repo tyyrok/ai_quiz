@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS answers (
 	likes INTEGER NOT NULL DEFAULT '0',
 	users_answered INTEGER NOT NULL DEFAULT '0',
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+	is_correct BOOLEAN DEFAULT 'f',
 	FOREIGN KEY(question_id) REFERENCES questions (id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS ix_answers_question_id ON answers (question_id);

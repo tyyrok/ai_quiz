@@ -33,6 +33,21 @@
             },
             incrementLikes(question) {
                 question.likes++;
+            },
+            async sendAnswer(questionId, answerId) {
+                try {
+                    const res = await fetch(`/${questionId}/${answerId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    console.log('Answer submitted!');
+                } catch (err) {
+                    console.error('Failed to submit answer:', err);
+                }
             }
         }">
             <div class="space-y-6">
@@ -44,7 +59,10 @@
                                 <button 
                                     class="block w-full p-2 bg-gray-200 rounded hover:bg-indigo-300 hover:text-white transition-all"
                                     :class="{'bg-blue-500 text-white': q.selected === aIndex}"
-                                    @click="q.selected = aIndex"
+                                    @click="
+                                        q.selected = aIndex;
+                                        sendAnswer(q.id, answer.id);
+                                    "
                                     x-text="answer.text">
                                 </button>
                             </template>

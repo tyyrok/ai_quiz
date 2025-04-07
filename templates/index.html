@@ -44,7 +44,32 @@
                     });
 
                     if (!res.ok) throw new Error('Network response was not ok');
-                    console.log('Answer submitted!');
+                    const data = await res.json();
+
+                    const question = this.questions.find(q => q.id === questionId);
+                    if (question) {
+                        question.correctAnswerId = JSON.parse(data.correctAnswer).id;
+                    }
+                } catch (err) {
+                    console.error('Failed to submit answer:', err);
+                }
+            },
+            async likeQuestion(questionId) {
+                try {
+                    const res = await fetch(`/${questionId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    const data = await res.json();
+
+                    const question = this.questions.find(q => q.id === questionId);
+                    if (question) {
+                        question.likes = data.likes;
+                    }
                 } catch (err) {
                     console.error('Failed to submit answer:', err);
                 }
@@ -58,7 +83,11 @@
                             <template x-for="(answer, aIndex) in q.answers" :key="aIndex">
                                 <button 
                                     class="block w-full p-2 bg-gray-200 rounded hover:bg-indigo-300 hover:text-white transition-all"
-                                    :class="{'bg-blue-500 text-white': q.selected === aIndex}"
+                                    :class="{
+                                        'bg-blue-500 text-white': q.selected === aIndex,
+                                        'bg-green-500 text-white': q.correctAnswerId === answer.id,
+                                        'bg-red-500 text-white': q.selected === aIndex && answer.id !== q.correctAnswerId
+                                    }"
                                     @click="
                                         q.selected = aIndex;
                                         sendAnswer(q.id, answer.id);
@@ -67,7 +96,7 @@
                                 </button>
                             </template>
                         </div>
-                        <button class="mt-4 text-sm text-gray-500 hover:text-gray-700 flex items-center" @click="q.likes++">
+                        <button class="mt-4 text-sm text-gray-500 hover:text-gray-700 flex items-center" @click="q.likes++; likeQuestion(q.id);">
                             🤖 <span class="ml-2" x-text="q.likes"></span> Likes
                         </button>
                     </div>

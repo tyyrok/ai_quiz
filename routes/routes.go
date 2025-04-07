@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"time"
 	"strconv"
+	"time"
 
 	"encoding/json"
 
@@ -97,6 +97,60 @@ func Run(dbpool *pgxpool.Pool) {
 			return
 		}
 		ctx.JSON(http.StatusOK, gin.H{"correctAnswer": string(answerJSON)})
+	})
+
+	router.PATCH("/:question_id", func(ctx *gin.Context)  {
+		dbctx, ok := ctx.Get("db")
+		if !ok {
+			log.Print("Failed to connect to db")
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection not found"})
+			return
+		}
+		pool, ok := dbctx.(*pgxpool.Pool)
+		if !ok {
+			log.Print("Failed to connect to db")
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid database connection"})
+			return
+		}
+		question_id := ctx.Params.ByName("question_id")
+		if question_id == " " {
+			log.Print("Not found question_id")
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Wrong request"})
+			return
+		}
+		q_id, err := strconv.Atoi(question_id)
+		if err != nil {
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Wrong request"})
+			return
+		}
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+			return
+		}
+		defer tx.Rollback(ctx)
+		row := tx.QueryRow(
+			ctx,
+			`SELECT likes FROM questions WHERE id=$1 FOR UPDATE;`,
+			q_id,
+		)
+		var likes int
+		err = row.Scan(&likes)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+			return
+		}
+		_, err = tx.Exec(
+			ctx,
+			`UPDATE questions SET likes=$1 WHERE id=$2;`,
+			likes+1, q_id,
+		)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+			return
+		}
+		tx.Commit(ctx)
+		ctx.JSON(http.StatusOK, gin.H{"likes": likes+1})
 	})
 
 	router.Run(":8080")

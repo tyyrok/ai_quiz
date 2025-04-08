@@ -73,6 +73,37 @@
                 } catch (err) {
                     console.error('Failed to submit answer:', err);
                 }
+            },
+            async dislikeQuestion(questionId) {
+                try {
+                    const res = await fetch(`/${questionId}?is_dislike`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    const data = await res.json();
+
+                    const question = this.questions.find(q => q.id === questionId);
+                    if (question) {
+                        question.dislikes = data.dislikes;
+                    }
+                } catch (err) {
+                    console.error('Failed to submit answer:', err);
+                }
+            },
+            async likeAnswer(questionId, answerId) {
+                // Optionally implement server call
+                const question = this.questions.find(q => q.id === questionId);
+                const answer = question?.answers.find(a => a.id === answerId);
+                if (answer) answer.likes = (answer.likes || 0) + 1;
+            },
+            async dislikeAnswer(questionId, answerId) {
+                const question = this.questions.find(q => q.id === questionId);
+                const answer = question?.answers.find(a => a.id === answerId);
+                if (answer) answer.dislikes = (answer.dislikes || 0) + 1;
             }
         }">
             <div class="space-y-6">
@@ -81,24 +112,48 @@
                         <h2 class="text-lg font-semibold text-indigo-600" x-text="q.text"></h2>
                         <div class="mt-4 space-y-2">
                             <template x-for="(answer, aIndex) in q.answers" :key="aIndex">
-                                <button 
-                                    class="block w-full p-2 bg-gray-200 rounded hover:bg-indigo-300 hover:text-white transition-all"
-                                    :class="{
-                                        'bg-blue-500 text-white': q.selected === aIndex,
-                                        'bg-green-500 text-white': q.correctAnswerId === answer.id,
-                                        'bg-red-500 text-white': q.selected === aIndex && answer.id !== q.correctAnswerId
-                                    }"
-                                    @click="
-                                        q.selected = aIndex;
-                                        sendAnswer(q.id, answer.id);
-                                    "
-                                    x-text="answer.text">
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button 
+                                        class="flex-1 p-2 bg-gray-200 rounded hover:bg-indigo-300 hover:text-white transition-all"
+                                        :class="{
+                                            'bg-blue-500 text-white': q.selected === aIndex,
+                                            'bg-green-500 text-white': q.correctAnswerId === answer.id,
+                                            'bg-red-500 text-white': q.selected === aIndex && answer.id !== q.correctAnswerId
+                                        }"
+                                        @click="
+                                            q.selected = aIndex;
+                                            sendAnswer(q.id, answer.id);
+                                        "
+                                        x-text="answer.text">
+                                    </button>
+                                    <div class="flex flex-col items-center gap-1 ml-2 text-xs">
+                                        <button 
+                                            @click="likeAnswer(q.id, answer.id)" 
+                                            title="Like Answer"
+                                            class="text-green-600 hover:text-green-800 flex items-center gap-1"
+                                        >
+                                            ▲ <span x-text="answer.likes || 0"></span>
+                                        </button>
+                                        <button 
+                                            @click="dislikeAnswer(q.id, answer.id)" 
+                                            title="Dislike Answer"
+                                            class="text-red-600 hover:text-red-800 flex items-center gap-1"
+                                        >
+                                            ▼ <span x-text="answer.dislikes || 0"></span>
+                                        </button>
+                                    </div>
+                                </div>
                             </template>
                         </div>
-                        <button class="mt-4 text-sm text-gray-500 hover:text-gray-700 flex items-center" @click="q.likes++; likeQuestion(q.id);">
-                            🤖 <span class="ml-2" x-text="q.likes"></span> Likes
-                        </button>
+    
+                        <div class="flex gap-4 mt-4 text-sm text-gray-500">
+                            <button class="flex items-center hover:text-green-700" @click="q.likes++; likeQuestion(q.id);">
+                                👍 <span class="ml-1" x-text="q.likes"></span> Likes
+                            </button>
+                            <button class="flex items-center hover:text-red-700" @click="q.dislikes++; dislikeQuestion(q.id);">
+                                👎 <span class="ml-1" x-text="q.dislikes"></span> Dislike
+                            </button>
+                        </div>
                     </div>
                 </template>
             </div>

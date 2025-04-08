@@ -99,7 +99,7 @@ func questionLikeHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Wrong request"})
 		return
 	}
-	_, is_dislike := ctx.Params.Get("is_dislike")
+	_, is_dislike := ctx.GetQuery("is_dislike")
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
@@ -107,7 +107,7 @@ func questionLikeHandler(ctx *gin.Context) {
 	}
 	defer tx.Rollback(ctx)
 
-	if !is_dislike {
+	if is_dislike {
 		row := tx.QueryRow(
 			ctx,
 			`SELECT dislikes FROM questions WHERE id=$1 FOR UPDATE;`,
@@ -156,8 +156,95 @@ func questionLikeHandler(ctx *gin.Context) {
 	}
 }
 
+func answerLikeHandler(ctx *gin.Context) {
+	dbctx, ok := ctx.Get("db")
+	if !ok {
+		log.Print("Failed to connect to db")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection not found"})
+		return
+	}
+	pool, ok := dbctx.(*pgxpool.Pool)
+	if !ok {
+		log.Print("Failed to connect to db")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid database connection"})
+		return
+	}
+	question_id := ctx.Params.ByName("question_id")
+	answer_id := ctx.Params.ByName("answer_id")
+	if question_id == " " || answer_id == " "{
+		log.Print("Not found question_id or answer_id")
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Wrong request"})
+		return
+	}
+	_, err := strconv.Atoi(question_id)
+	if err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Wrong request"})
+		return
+	}
+	a_id, err := strconv.Atoi(answer_id)
+	if err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Wrong request"})
+		return
+	}
+	_, is_dislike := ctx.GetQuery("is_dislike")
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	if !is_dislike {
+		row := tx.QueryRow(
+			ctx,
+			`SELECT dislikes FROM answers WHERE id=$1 FOR UPDATE;`,
+			a_id,
+		)
+		var dislikes int
+		err = row.Scan(&dislikes)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+			return
+		}
+		_, err = tx.Exec(
+			ctx,
+			`UPDATE answers SET dislikes=$1 WHERE id=$2;`,
+			dislikes+1, a_id,
+		)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+			return
+		}
+		tx.Commit(ctx)
+		ctx.JSON(http.StatusOK, gin.H{"dislikes": dislikes+1})
+	} else {
+		row := tx.QueryRow(
+			ctx,
+			`SELECT likes FROM answers WHERE id=$1 FOR UPDATE;`,
+			a_id,
+		)
+		var likes int
+		err = row.Scan(&likes)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+			return
+		}
+		_, err = tx.Exec(
+			ctx,
+			`UPDATE answers SET likes=$1 WHERE id=$2;`,
+			likes+1, a_id,
+		)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Smt wrong"})
+			return
+		}
+		tx.Commit(ctx)
+		ctx.JSON(http.StatusOK, gin.H{"likes": likes+1})
+	}
+}
+
 func getTodayQuestions(pool *pgxpool.Pool) ([]Question, error) {
-	rows, err := pool.Query(context.Background(), `SELECT questions.id, questions.title, questions.likes, questions.dislikes, answers.id, answers.title, answers.likes, answers.users_answered FROM questions INNER JOIN answers ON answers.question_id = questions.id WHERE questions.date = $1;`, time.Now().Format("2006-01-02"))
+	rows, err := pool.Query(context.Background(), `SELECT questions.id, questions.title, questions.likes, questions.dislikes, answers.id, answers.title, answers.likes, answers.dislikes, answers.users_answered FROM questions INNER JOIN answers ON answers.question_id = questions.id WHERE questions.date = $1;`, time.Now().Format("2006-01-02"))
 	if err != nil {
 		log.Printf("Failed to retrieve data %s", err)
 		return nil, err
@@ -169,7 +256,7 @@ func getTodayQuestions(pool *pgxpool.Pool) ([]Question, error) {
 		var a Answer
 		is_new := true
 		err := rows.Scan(
-			&q.Id, &q.Title, &q.Likes, &q.Dislikes, &a.Id, &a.Title, &a.Likes, &a.Users_answered)
+			&q.Id, &q.Title, &q.Likes, &q.Dislikes, &a.Id, &a.Title, &a.Likes, &a.Dislikes, &a.Users_answered)
 		if err != nil {
 			log.Println("Row scan error:", err)
 			continue

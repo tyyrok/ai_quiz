@@ -9,6 +9,7 @@ type Answer struct {
 	Id int `json:"id"`
 	Title string `json:"text"`
 	Likes int `json:"likes"`
+	Dislikes int `json:"dislikes"`
 	Users_answered int `json:"users_answered"`
 }
 
@@ -32,6 +33,8 @@ func Run(dbpool *pgxpool.Pool) {
 	router.GET("/", mainPageHandler)
 
 	router.POST("/:question_id/:answer_id", answerHandler)
+	
+	router.PATCH("/:question_id/:answer_id", answerLikeHandler)
 
 	router.PATCH("/:question_id", questionLikeHandler)
 

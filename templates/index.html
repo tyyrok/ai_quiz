@@ -76,7 +76,7 @@
             },
             async dislikeQuestion(questionId) {
                 try {
-                    const res = await fetch(`/${questionId}?is_dislike`, {
+                    const res = await fetch(`/${questionId}?is_dislike=true`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json'
@@ -128,14 +128,14 @@
                                     </button>
                                     <div class="flex flex-col items-center gap-1 ml-2 text-xs">
                                         <button 
-                                            @click="likeAnswer(q.id, answer.id)" 
+                                            @click="answer.likes++; likeAnswer(q.id, answer.id)" 
                                             title="Like Answer"
                                             class="text-green-600 hover:text-green-800 flex items-center gap-1"
                                         >
                                             ▲ <span x-text="answer.likes || 0"></span>
                                         </button>
                                         <button 
-                                            @click="dislikeAnswer(q.id, answer.id)" 
+                                            @click="answer.dislikes++; dislikeAnswer(q.id, answer.id)" 
                                             title="Dislike Answer"
                                             class="text-red-600 hover:text-red-800 flex items-center gap-1"
                                         >
@@ -148,10 +148,10 @@
     
                         <div class="flex gap-4 mt-4 text-sm text-gray-500">
                             <button class="flex items-center hover:text-green-700" @click="q.likes++; likeQuestion(q.id);">
-                                👍 <span class="ml-1" x-text="q.likes"></span> Likes
+                                👍 <span class="ml-1" x-text="q.likes + ' Likes'"></span>
                             </button>
                             <button class="flex items-center hover:text-red-700" @click="q.dislikes++; dislikeQuestion(q.id);">
-                                👎 <span class="ml-1" x-text="q.dislikes"></span> Dislike
+                                👎 <span class="ml-1" x-text="q.dislikes + ' Dislikes'"></span> 
                             </button>
                         </div>
                     </div>

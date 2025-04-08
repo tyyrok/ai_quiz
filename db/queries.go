@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS answers (
 	title TEXT NOT NULL,
 	question_id INTEGER,
 	likes INTEGER NOT NULL DEFAULT '0',
+	dislikes INTEGER NOT NULL DEFAULT '0',
 	users_answered INTEGER NOT NULL DEFAULT '0',
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
 	is_correct BOOLEAN DEFAULT 'f',

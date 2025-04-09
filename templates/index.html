@@ -26,86 +26,7 @@
         </section>
         
         <!-- Questions Section -->
-        <section x-data="{
-            questions: JSON.parse('{{.questions}}'),
-            selectAnswer(question, answerIndex) {
-                question.selected = answerIndex;
-            },
-            incrementLikes(question) {
-                question.likes++;
-            },
-            async sendAnswer(questionId, answerId) {
-                try {
-                    const res = await fetch(`/${questionId}/${answerId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    const data = await res.json();
-
-                    const question = this.questions.find(q => q.id === questionId);
-                    if (question) {
-                        question.correctAnswerId = JSON.parse(data.correctAnswer).id;
-                    }
-                } catch (err) {
-                    console.error('Failed to submit answer:', err);
-                }
-            },
-            async likeQuestion(questionId) {
-                try {
-                    const res = await fetch(`/${questionId}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    const data = await res.json();
-
-                    const question = this.questions.find(q => q.id === questionId);
-                    if (question) {
-                        question.likes = data.likes;
-                    }
-                } catch (err) {
-                    console.error('Failed to submit answer:', err);
-                }
-            },
-            async dislikeQuestion(questionId) {
-                try {
-                    const res = await fetch(`/${questionId}?is_dislike=true`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    const data = await res.json();
-
-                    const question = this.questions.find(q => q.id === questionId);
-                    if (question) {
-                        question.dislikes = data.dislikes;
-                    }
-                } catch (err) {
-                    console.error('Failed to submit answer:', err);
-                }
-            },
-            async likeAnswer(questionId, answerId) {
-                // Optionally implement server call
-                const question = this.questions.find(q => q.id === questionId);
-                const answer = question?.answers.find(a => a.id === answerId);
-                if (answer) answer.likes = (answer.likes || 0) + 1;
-            },
-            async dislikeAnswer(questionId, answerId) {
-                const question = this.questions.find(q => q.id === questionId);
-                const answer = question?.answers.find(a => a.id === answerId);
-                if (answer) answer.dislikes = (answer.dislikes || 0) + 1;
-            }
-        }">
+        <section x-data="quizApp()">
             <div class="space-y-6">
                 <template x-for="(q, index) in questions" :key="index">
                     <div class="bg-white p-6 rounded-xl shadow-md ai-glow">
@@ -128,14 +49,14 @@
                                     </button>
                                     <div class="flex flex-col items-center gap-1 ml-2 text-xs">
                                         <button 
-                                            @click="answer.likes++; likeAnswer(q.id, answer.id)" 
+                                            @click="answer.likes++; likeAnswer(q.id, answer.id, true);" 
                                             title="Like Answer"
                                             class="text-green-600 hover:text-green-800 flex items-center gap-1"
                                         >
                                             ▲ <span x-text="answer.likes || 0"></span>
                                         </button>
                                         <button 
-                                            @click="answer.dislikes++; dislikeAnswer(q.id, answer.id)" 
+                                            @click="answer.dislikes++; likeAnswer(q.id, answer.id, false);" 
                                             title="Dislike Answer"
                                             class="text-red-600 hover:text-red-800 flex items-center gap-1"
                                         >
@@ -147,10 +68,10 @@
                         </div>
     
                         <div class="flex gap-4 mt-4 text-sm text-gray-500">
-                            <button class="flex items-center hover:text-green-700" @click="q.likes++; likeQuestion(q.id);">
+                            <button class="flex items-center hover:text-green-700" @click="q.likes++; likeQuestion(q.id, true);">
                                 👍 <span class="ml-1" x-text="q.likes + ' Likes'"></span>
                             </button>
-                            <button class="flex items-center hover:text-red-700" @click="q.dislikes++; dislikeQuestion(q.id);">
+                            <button class="flex items-center hover:text-red-700" @click="q.dislikes++; likeQuestion(q.id, false);">
                                 👎 <span class="ml-1" x-text="q.dislikes + ' Dislikes'"></span> 
                             </button>
                         </div>
@@ -164,5 +85,99 @@
             <p>&copy; 2025 AI Knowledge Hub. Powered by Alpine.js & Tailwind CSS.</p>
         </footer>
     </div>
+    <script type="application/json" id="questions-data">
+        {{ .questions }}
+    </script>
+    <script>
+        function quizApp() {
+            return {
+                questions: JSON.parse(document.getElementById('questions-data').textContent),
+                
+                selectAnswer(question, answerIndex) {
+                    question.selected = answerIndex;
+                },
+                incrementLikes(question) {
+                    question.likes++;
+                },
+                async sendAnswer(questionId, answerId) {
+                    try {
+                        const res = await fetch(`/api/${questionId}/${answerId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+        
+                        if (!res.ok) throw new Error('Network response was not ok');
+                        const data = await res.json();
+        
+                        const question = this.questions.find(q => q.id === questionId);
+                        if (question) {
+                            question.correctAnswerId = JSON.parse(data.correctAnswer).id;
+                        }
+                    } catch (err) {
+                        console.error('Failed to submit answer:', err);
+                    }
+                },
+                async likeQuestion(questionId, is_like) {
+                    try {
+                        const url = is_like
+                            ? `/api/${questionId}`
+                            : `/api/${questionId}?is_dislike=true`;
+        
+                        const res = await fetch(url, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+        
+                        if (!res.ok) throw new Error('Network response was not ok');
+                        const data = await res.json();
+        
+                        const question = this.questions.find(q => q.id === questionId);
+                        if (question) {
+                            if (is_like) {
+                                question.likes = data.likes;
+                            } else {
+                                question.dislikes = data.dislikes;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Failed to submit answer:', err);
+                    }
+                },
+                async likeAnswer(questionId, answerId, is_like) {
+                    try {
+                        const url = is_like
+                            ? `/api/${questionId}/${answerId}`
+                            : `/api/${questionId}/${answerId}?is_dislike=true`;
+        
+                        const res = await fetch(url, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+        
+                        if (!res.ok) throw new Error('Network response was not ok');
+                        const data = await res.json();
+        
+                        const question = this.questions.find(q => q.id === questionId);
+                        const answer = question?.answers.find(a => a.id === answerId);
+                        if (answer) {
+                            if (is_like) {
+                                answer.likes = data.likes;
+                            } else {
+                                answer.dislikes = data.dislikes;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Failed to like answer:', err);
+                    }
+                }
+            }
+        }
+        </script>
 </body>
 </html>

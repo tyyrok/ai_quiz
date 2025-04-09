@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -37,7 +38,10 @@ func mainPageHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
-	ctx.HTML(http.StatusOK, "index.html", gin.H{"Name": "Gin Framework", "questions": string(questionsJSON)})
+	ctx.HTML(
+		http.StatusOK,
+		"index.html",
+		gin.H{"Name": "Gin Framework", "questions": template.JS(questionsJSON)})
 }
 
 func answerHandler(ctx *gin.Context) {
@@ -194,7 +198,7 @@ func answerLikeHandler(ctx *gin.Context) {
 	}
 	defer tx.Rollback(ctx)
 
-	if !is_dislike {
+	if is_dislike {
 		row := tx.QueryRow(
 			ctx,
 			`SELECT dislikes FROM answers WHERE id=$1 FOR UPDATE;`,
@@ -244,7 +248,10 @@ func answerLikeHandler(ctx *gin.Context) {
 }
 
 func getTodayQuestions(pool *pgxpool.Pool) ([]Question, error) {
-	rows, err := pool.Query(context.Background(), `SELECT questions.id, questions.title, questions.likes, questions.dislikes, answers.id, answers.title, answers.likes, answers.dislikes, answers.users_answered FROM questions INNER JOIN answers ON answers.question_id = questions.id WHERE questions.date = $1;`, time.Now().Format("2006-01-02"))
+	rows, err := pool.Query(
+		context.Background(),
+		`SELECT questions.id, questions.title, questions.likes, questions.dislikes, answers.id, answers.title, answers.likes, answers.dislikes, answers.users_answered FROM questions INNER JOIN answers ON answers.question_id = questions.id WHERE questions.date = $1;`,
+		time.Now().Format("2006-01-02"))
 	if err != nil {
 		log.Printf("Failed to retrieve data %s", err)
 		return nil, err

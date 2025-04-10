@@ -33,7 +33,12 @@ func NewRouter() *gin.Engine {
 	router := gin.Default()
 	expectedHost := os.Getenv("ORIGIN")
 	port := os.Getenv("PORT")
-	host := fmt.Sprintf("%s:%s", expectedHost, port)
+	var host string
+	if port == "80" {
+		host = expectedHost
+	} else {
+		host = fmt.Sprintf("%s:%s", expectedHost, port)
+	}
 
 	// Setup Security Headers
 	router.Use(func(c *gin.Context) {
@@ -91,7 +96,12 @@ func CheckOrigin() gin.HandlerFunc {
 		schema := os.Getenv("SCHEMA")
 		expectedHost := os.Getenv("ORIGIN")
 		port := os.Getenv("PORT")
-		host := fmt.Sprintf("%s%s:%s", schema, expectedHost, port)
+		var host string
+		if port == "80" {
+			host = fmt.Sprintf("%s%s", schema, expectedHost)
+		} else {
+			host = fmt.Sprintf("%s%s:%s", schema, expectedHost, port)
+		}
 		origin := ctx.GetHeader("Origin")
 		referer := ctx.GetHeader("Referer")
 

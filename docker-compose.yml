@@ -1,0 +1,12 @@
+services:
+  ai_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    container_name: ai_app
+    command: ["/app/api"]
+    ports:
+      - 80:80
+

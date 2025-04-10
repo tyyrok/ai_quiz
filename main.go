@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -17,8 +18,10 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-	  log.Fatal("Error loading .env file")
+	  log.Println("Error loading .env file")
 	}
+	ginMode := os.Getenv("GIN_MODE")
+	gin.SetMode(ginMode)
 
 	encodedPassword := os.Getenv("DB_PASSWORD")
 	dbUrl := os.Getenv("DB_URL")

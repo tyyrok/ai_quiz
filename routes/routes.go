@@ -1,11 +1,12 @@
 package routes
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
-	"log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -30,11 +31,13 @@ type Question struct {
 func NewRouter() *gin.Engine {
 	// Set the router as the default one shipped with Gin
 	router := gin.Default()
-	//expectedHost := os.Getenv("ORIGIN")
+	expectedHost := os.Getenv("ORIGIN")
+	port := os.Getenv("PORT")
+	host := fmt.Sprintf("%s:%s", expectedHost, port)
 
 	// Setup Security Headers
 	router.Use(func(c *gin.Context) {
-		if c.Request.Host != "127.0.0.1:8080" {
+		if c.Request.Host != host {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid host header"})
 			return
 		}
@@ -53,7 +56,6 @@ func NewRouter() *gin.Engine {
 
 
 func Run(dbpool *pgxpool.Pool) {
-	//router := gin.Default()
 	httpPort := os.Getenv("PORT")
 	router := NewRouter()
 	router.Use(func(ctx *gin.Context) {
@@ -72,12 +74,9 @@ func Run(dbpool *pgxpool.Pool) {
 
 	v1.PATCH("/:question_id", questionLikeHandler)
 
-	//router.Run(":8080")
-	// Create server with timeout
 	srv := &http.Server{
 		Addr:    ":" + httpPort,
 		Handler: router,
-		// set timeout due CWE-400 - Potential Slowloris Attack
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -89,15 +88,18 @@ func Run(dbpool *pgxpool.Pool) {
 
 func CheckOrigin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		siteOrigin := os.Getenv("ORIGIN")
+		schema := os.Getenv("SCHEMA")
+		expectedHost := os.Getenv("ORIGIN")
+		port := os.Getenv("PORT")
+		host := fmt.Sprintf("%s%s:%s", schema, expectedHost, port)
 		origin := ctx.GetHeader("Origin")
 		referer := ctx.GetHeader("Referer")
 
-		if origin != "" && origin != siteOrigin {
+		if origin != "" && origin != host {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Invalid origin"})
 			return
 		}
-		if referer != "" && !strings.HasPrefix(referer, siteOrigin) {
+		if referer != "" && !strings.HasPrefix(referer, host) {
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Invalid referer"})
 			return
 		}

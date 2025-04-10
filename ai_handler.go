@@ -102,7 +102,7 @@ func saveQuestionsToDB(dbpool *pgxpool.Pool, quizData *QuizDataResponse) {
 	ctx := context.Background()
 	tx, err := dbpool.Begin(ctx)
 	if err != nil {
-		log.Printf("Problem with pool connection", err)
+		log.Printf("Problem with pool connection %s", err)
 		return
 	}
 	defer tx.Rollback(ctx)

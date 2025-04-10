@@ -39,6 +39,7 @@ func main() {
 			1,
 			gocron.NewAtTimes(
 				gocron.NewAtTime(17, 50, 0),
+				gocron.NewAtTime(9, 06, 0),
 			),
 		),
 		gocron.NewTask(

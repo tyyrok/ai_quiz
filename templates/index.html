@@ -38,8 +38,8 @@
                                         :disabled="q.answered"
                                         :class="{
                                             'cursor-not-allowed opacity-60': q.answered,
-                                            'bg-green-500 text-white': q.correctAnswerId === answer.id,
                                             'bg-red-500 text-white': q.selected === aIndex && answer.id !== q.correctAnswerId,
+                                            'bg-green-500 text-white': q.correctAnswerId === answer.id,
                                         }"
                                         @click="
                                             if (!q.answered) {
@@ -147,8 +147,8 @@
         
                         if (!res.ok) throw new Error('Network response was not ok');
                         const data = await res.json();
-        
-                        question.correctAnswerId = data.correctAnswer.id;
+                        const correctAnswerObj = JSON.parse(data.correctAnswer);
+                        question.correctAnswerId = correctAnswerObj.id;
                         question.selected = question.answers.findIndex(a => a.id === answerId);
                         question.answered = true;
                     } catch (err) {

@@ -35,29 +35,36 @@
                                 <div class="flex items-center gap-2">
                                     <button 
                                         class="flex-1 p-2 bg-gray-200 rounded hover:bg-indigo-300 hover:text-white transition-all"
+                                        :disabled="q.answered"
                                         :class="{
-                                            'bg-blue-500 text-white': q.selected === aIndex,
+                                            'cursor-not-allowed opacity-60': q.answered,
                                             'bg-green-500 text-white': q.correctAnswerId === answer.id,
-                                            'bg-red-500 text-white': q.selected === aIndex && answer.id !== q.correctAnswerId
+                                            'bg-red-500 text-white': q.selected === aIndex && answer.id !== q.correctAnswerId,
                                         }"
                                         @click="
-                                            q.selected = aIndex;
-                                            sendAnswer(q.id, answer.id);
+                                            if (!q.answered) {
+                                                q.selected = aIndex;
+                                                sendAnswer(q.id, answer.id);
+                                            }
                                         "
                                         x-text="answer.text">
                                     </button>
                                     <div class="flex flex-col items-center gap-1 ml-2 text-xs">
                                         <button 
-                                            @click="answer.likes++; likeAnswer(q.id, answer.id, true);" 
+                                            @click="!answer.liked && likeAnswer(q.id, answer.id, true); answer.liked = true;" 
+                                            :disabled="answer.liked"
                                             title="Like Answer"
                                             class="text-green-600 hover:text-green-800 flex items-center gap-1"
+                                            :class="{'opacity-50 cursor-not-allowed': answer.liked}"
                                         >
                                             ▲ <span x-text="answer.likes || 0"></span>
                                         </button>
                                         <button 
-                                            @click="answer.dislikes++; likeAnswer(q.id, answer.id, false);" 
+                                            @click="!answer.disliked && likeAnswer(q.id, answer.id, false); answer.disliked = true;" 
+                                            :disabled="answer.disliked"
                                             title="Dislike Answer"
                                             class="text-red-600 hover:text-red-800 flex items-center gap-1"
+                                            :class="{'opacity-50 cursor-not-allowed': answer.disliked}"
                                         >
                                             ▼ <span x-text="answer.dislikes || 0"></span>
                                         </button>
@@ -67,10 +74,20 @@
                         </div>
     
                         <div class="flex gap-4 mt-4 text-sm text-gray-500">
-                            <button class="flex items-center hover:text-green-700" @click="q.likes++; likeQuestion(q.id, true);">
+                            <button 
+                                class="flex items-center hover:text-green-700"
+                                @click="!q.liked && likeQuestion(q.id, true); q.liked = true"
+                                :disabled="q.liked"
+                                :class="{ 'opacity-50 cursor-not-allowed': q.liked }"
+                            >
                                 👍 <span class="ml-1" x-text="q.likes + ' Likes'"></span>
                             </button>
-                            <button class="flex items-center hover:text-red-700" @click="q.dislikes++; likeQuestion(q.id, false);">
+                            <button 
+                                class="flex items-center hover:text-red-700"
+                                @click="!q.disliked && likeQuestion(q.id, false); q.disliked = true"
+                                :disabled="q.disliked"
+                                :class="{ 'opacity-50 cursor-not-allowed': q.disliked }"
+                            >
                                 👎 <span class="ml-1" x-text="q.dislikes + ' Dislikes'"></span> 
                             </button>
                         </div>
@@ -88,9 +105,27 @@
         {{ .questions }}
     </script>
     <script>
+        function getCookie(name) {
+            const cookie = document.cookie.split("; ").find(row => row.startsWith(name + "="));
+            return cookie ? decodeURIComponent(cookie.split("=")[1]) : null;
+        }
+    </script>
+    <script>
         function quizApp() {
+            const state = JSON.parse(getCookie("quiz_state") || "{}");
             return {
-                questions: JSON.parse(document.getElementById('questions-data').textContent),
+                questions: JSON.parse(document.getElementById('questions-data').textContent).map(q => {
+                    q.answered = state.answered?.includes(q.id) ?? false;
+                    q.liked = state.liked_questions?.includes(q.id) ?? false;
+                    q.disliked = state.disliked_questions?.includes(q.id) ?? false;
+        
+                    q.answers.forEach(answer => {
+                        answer.liked = state.liked_answers?.[q.id]?.includes(answer.id) ?? false;
+                        answer.disliked = state.disliked_answers?.[q.id]?.includes(answer.id) ?? false;
+                    });
+        
+                    return q;
+                }),
                 
                 selectAnswer(question, answerIndex) {
                     question.selected = answerIndex;
@@ -99,6 +134,9 @@
                     question.likes++;
                 },
                 async sendAnswer(questionId, answerId) {
+                    const question = this.questions.find(q => q.id === questionId);
+                    if (!question || question.answered) return;
+
                     try {
                         const res = await fetch(`/api/${questionId}/${answerId}`, {
                             method: 'POST',
@@ -110,10 +148,9 @@
                         if (!res.ok) throw new Error('Network response was not ok');
                         const data = await res.json();
         
-                        const question = this.questions.find(q => q.id === questionId);
-                        if (question) {
-                            question.correctAnswerId = JSON.parse(data.correctAnswer).id;
-                        }
+                        question.correctAnswerId = data.correctAnswer.id;
+                        question.selected = question.answers.findIndex(a => a.id === answerId);
+                        question.answered = true;
                     } catch (err) {
                         console.error('Failed to submit answer:', err);
                     }

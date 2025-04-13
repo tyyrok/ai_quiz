@@ -15,7 +15,7 @@ func setCookie(ctx *gin.Context, quizState *Cookie) {
 		log.Printf("Error with marshalling cookie struct %s", err)
 		return
 	}
-	ctx.SetCookie("quiz_state", string(jsonStr), 60*60*24, "/", origin, false, true)
+	ctx.SetCookie("quiz_state", string(jsonStr), 60*60*24, "/", origin, false, false)
 }
 
 

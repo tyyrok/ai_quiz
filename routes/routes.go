@@ -12,22 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Answer struct {
-	Id int `json:"id"`
-	Title string `json:"text"`
-	Likes int `json:"likes"`
-	Dislikes int `json:"dislikes"`
-	Users_answered int `json:"users_answered"`
-}
-
-type Question struct {
-	Id int `json:"id"`
-	Title string `json:"text"`
-	Likes int `json:"likes"`
-	Dislikes int `json:"dislikes"`
-	Answers []Answer `json:"answers"`
-}
-
 func NewRouter() *gin.Engine {
 	// Set the router as the default one shipped with Gin
 	router := gin.Default()

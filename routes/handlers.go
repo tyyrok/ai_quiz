@@ -76,6 +76,9 @@ func answerHandler(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 		return
 	}
+
+	q_id, _ := strconv.Atoi(question_id)
+	handleCookie(ctx, &QuizState{QuestionAnsweredId: q_id})
 	ctx.JSON(http.StatusOK, gin.H{"correctAnswer": string(answerJSON)})
 }
 
@@ -133,6 +136,7 @@ func questionLikeHandler(ctx *gin.Context) {
 			return
 		}
 		tx.Commit(ctx)
+		handleCookie(ctx, &QuizState{QuestionDislikedId: q_id})
 		ctx.JSON(http.StatusOK, gin.H{"dislikes": dislikes+1})
 	} else {
 		row := tx.QueryRow(
@@ -156,6 +160,7 @@ func questionLikeHandler(ctx *gin.Context) {
 			return
 		}
 		tx.Commit(ctx)
+		handleCookie(ctx, &QuizState{QuestionLikedId: q_id})
 		ctx.JSON(http.StatusOK, gin.H{"likes": likes+1})
 	}
 }
@@ -220,6 +225,7 @@ func answerLikeHandler(ctx *gin.Context) {
 			return
 		}
 		tx.Commit(ctx)
+		handleCookie(ctx, &QuizState{AnswerDislikedId: a_id})
 		ctx.JSON(http.StatusOK, gin.H{"dislikes": dislikes+1})
 	} else {
 		row := tx.QueryRow(
@@ -243,6 +249,7 @@ func answerLikeHandler(ctx *gin.Context) {
 			return
 		}
 		tx.Commit(ctx)
+		handleCookie(ctx, &QuizState{AnswerLikedId: a_id})
 		ctx.JSON(http.StatusOK, gin.H{"likes": likes+1})
 	}
 }

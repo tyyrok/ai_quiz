@@ -1,6 +1,6 @@
 ## Minimalistic Quiz SPA with AI generated Questions and Answers
 
-[Try it here](http://tyyrok.online) — a simple Single Page Application where you can test the power of AI-generated quizzes.
+[Try it here](https://tyyrok.online) — a simple Single Page Application where you can test the power of AI-generated quizzes.
 
 Every day, the app sends a prompt to the Gemini AI API to generate a new question with multiple-choice answers. You can vote on how accurate or useful the question and its answers are by liking or disliking them.
 
